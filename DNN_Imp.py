@@ -7,7 +7,7 @@ class DenseLayer():
      self.weights = None
     
     def feed_forward(self, X):
-        self.weights = np.random.randn(X.shape[1] + 1, self.n_neurons) * 0.01
+        self.weights = np.random.randn(X.shape[1] + 1, self.n_neurons) 
         self.input = np.hstack((X, np.ones((X.shape[0], 1))))
         # self.input = np.hstack((np.ones((X.shape[0], 1)), X))
 
