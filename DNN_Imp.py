@@ -25,7 +25,7 @@ class DenseLayer():
       dZ = dA
       self.dW = np.dot(self.input.T, dZ) / m
       dA_prev = np.dot(dZ, self.weights[:-1].T)
-      db = np.sum(dZ, axis=0, keepdims=True) / m
+      db = np.sum(dZ, axis=0) / m
     
       self.weights[:-1] -= learning_rate * self.dW
       self.weights[-1] -= learning_rate * db
