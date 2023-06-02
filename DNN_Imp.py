@@ -1,67 +1,80 @@
 import numpy as np
 
-class DenseLayer():
-    def __init__(self, n_neurons=10, activation_function="ReLU"):
-     self.n_neurons = n_neurons
-     self.activation_function = activation_function
-     self.weights = None
-    
-    def feed_forward(self, X):
-        self.weights = np.random.randn(X.shape[1] + 1, self.n_neurons) 
-        self.input = np.hstack((X, np.ones((X.shape[0], 1))))
-        # self.input = np.hstack((np.ones((X.shape[0], 1)), X))
+class DenseLayer:
+    def __init__(self, input_size, output_size, activation=None):
+        self.weights = np.random.randn(input_size, output_size)
+        self.biases = np.ones((output_size))
+        self.activation = activation
 
-        self.z = np.dot(self.input, self.weights)
+    def forward(self, input):
+        self.input = input
+        self.z = np.dot(input, self.weights) + self.biases
 
-        # for future updates
-        # if self.activation_function == "ReLU":
-        #   self.a = np.maximum(0, self.z)
+        if self.activation == 'relu':
+            return np.maximum(0, self.z)
+        elif self.activation == 'sigmoid':
+            return 1 / (1 + np.exp(-self.z))
+        else:
+            return self.z
 
-        self.a = self.z
-        return self.a
-    
-    def back_propagation(self, dA, learning_rate):
-      m = self.input.shape[0]
-      dZ = dA
-      self.dW = np.dot(self.input.T, dZ) / m
-      dA_prev = np.dot(dZ, self.weights[:-1].T)
-      db = np.sum(dZ, axis=0) / m
-    
-      self.weights[:-1] -= learning_rate * self.dW
-      self.weights[-1] -= learning_rate * db
-    
-      return dA_prev
+    def backward(self, dz, lr):
+        n, m = self.input.shape
 
+        if self.activation == 'relu':
+            dz = dz * (self.z > 0)
+        elif self.activation == 'sigmoid':
+            sigmoid = 1 / (1 + np.exp(-self.z))
+            dz = dz * sigmoid * (1 - sigmoid)
 
-class DenseNetwork():
-    def __init__(self, layers):
-        self.layers = layers
-    
-    def add(self, layer):
+        dw = np.dot(self.input.T, dz) / m
+        db = np.sum(dz, axis=0) / m
+        da = np.dot(dz, self.weights.T) / m
+
+        self.weights -=  lr * dw
+        self.biases -=  lr * db
+
+        return da
+
+class DenseNetwork:
+    def __init__(self):
+        self.layers = []
+
+    def add_layer(self, layer):
         self.layers.append(layer)
-    
-    def fit(self, X, y, learning_rate=0.01, epochs=10):
-      for epoch in range(epochs):
-        self.output = self.__forward_propagation(X)
-        self.__backward_propagation(y, learning_rate)
 
-    def __forward_propagation(self, X):
-        temp = X
+    def feed_forward(self, X):
+        output = X
         for layer in self.layers:
-            temp = layer.feed_forward(temp)
-        return temp
-    
-    def __backward_propagation(self, y, learning_rate):
-        m = y.shape[0]
-        dA = -(y - self.output) / m
-        for i in range(len(self.layers)-1, -1, -1):
-         dA = self.layers[i].back_propagation(dA, learning_rate) 
-    
-    def predict(self, X):
-        output = self.__forward_propagation(X)
+            output = layer.forward(output)
         return output
-    
-    def loss(self, y):
-        m = y.shape[0]
-        loss = np.sum(np.square(y - self.output)) / (2 * m)
+
+    def backward_propagation(self, da, lr):
+        for layer in reversed(self.layers):
+            da = layer.backward(da, lr)
+
+    def __call__(self, X, y, lr, n_epochs, batch_size=32):
+        n, m = X.shape
+        n_batches = m // batch_size
+
+        print('\n')
+        for epoch in range(n_epochs):
+            predictions = self.feed_forward(X)
+            loss = self.compute_loss(predictions, y)
+            print(f'Loss at epoch {epoch} === {loss}')
+            da = self.compute_gradient(predictions, y)
+            self.backward_propagation(da, lr)
+
+    def compute_loss(self, predictions, y):
+        #n, m = y.shape
+        #loss = -np.sum(y * np.log(predictions) + (1 - y) * np.log(1 - predictions)) 
+        loss = -np.sum(y * np.log(predictions))
         return loss
+
+    def compute_gradient(self, predictions, y):
+        n, m = y.shape
+        dz = (predictions - y) / m
+        return dz
+
+    def predict(self, X):
+        predictions = self.feed_forward(X)
+        return predictions
