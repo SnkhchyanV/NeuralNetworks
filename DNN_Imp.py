@@ -65,9 +65,9 @@ class DenseNetwork:
             self.backward_propagation(da, lr)
 
     def compute_loss(self, predictions, y):
-        #n, m = y.shape
+        n, m = y.shape
         #loss = -np.sum(y * np.log(predictions) + (1 - y) * np.log(1 - predictions)) 
-        loss = -np.sum(y * np.log(predictions))
+        loss = -np.sum(y * np.log(predictions))/m
         return loss
 
     def compute_gradient(self, predictions, y):
